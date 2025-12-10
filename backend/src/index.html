@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Socket.IO Minimal Tester</title>
+
+<style>
+  :root {
+    --bg: #fafafa;
+    --fg: #111;
+    --accent: #2563eb;
+    --border: #e5e5e5;
+    --mono: "SFMono-Regular", Consolas, monospace;
+  }
+
+  body {
+    font-family: system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    margin: 2rem auto;
+    max-width: 700px;
+    line-height: 1.5;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+  }
+
+  button {
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: .45rem .9rem;
+    border-radius: 6px;
+    font-size: .9rem;
+    cursor: pointer;
+    transition: 0.15s ease;
+  }
+
+  button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  label {
+    display: block;
+    margin: 1.2rem 0 .3rem;
+    font-size: .9rem;
+    font-weight: 500;
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: .55rem .7rem;
+    font-size: .9rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-sizing: border-box;
+    background: #fff;
+    transition: 0.15s border-color ease;
+  }
+
+  input:focus, textarea:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+
+  textarea {
+    min-height: 70px;
+    resize: vertical;
+  }
+
+  .row {
+    display: flex;
+    gap: .5rem;
+    margin-top: .7rem;
+  }
+
+  #log {
+    background: #fff;
+    border: 1px solid var(--border);
+    padding: 1rem;
+    height: 300px;
+    overflow-y: auto;
+    margin-top: 1rem;
+    font-family: var(--mono);
+    font-size: .8rem;
+    white-space: pre-wrap;
+  }
+
+  .sent { color: #2563eb; }
+  .received { color: #16a34a; }
+  .system { color: #6b7280; }
+</style>
+</head>
+
+<body>
+
+<h1>Socket.IO  Tester</h1>
+
+<div class="row">
+  <button id="connectBtn">Connect</button>
+  <button id="disconnectBtn" disabled>Disconnect</button>
+  <button id="clearBtn">Clear</button>
+</div>
+
+<label>Event name</label>
+<input id="eventName" value="chat-message"/>
+
+<label>JSON payload</label>
+<textarea id="payload">{ "text": "hello world", "ts": Date.now() }</textarea>
+
+<div class="row">
+  <button id="fireBtn" disabled>Send Event</button>
+</div>
+
+<label>Event log</label>
+<div id="log"></div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const log=(msg,cls='system')=>{
+    const el=document.createElement('div');
+    el.className=cls;
+    el.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;
+    logBox.appendChild(el);
+    logBox.scrollTop = logBox.scrollHeight;
+  };
+
+  let socket=null;
+  const $=id=>document.getElementById(id);
+  const logBox=$('log');
+
+  $('connectBtn').onclick=()=>{
+    if(socket)return;
+    socket=io({transports:['websocket','polling']});
+
+    socket.on('connect',()=>{
+      log(`Connected: ${socket.id}`,'system');
+      toggle(true);
+    });
+    socket.on('disconnect',()=>{
+      log('Disconnected','system');
+      toggle(false);
+    });
+    socket.on('connect_error',e=>log(`Error: ${e.message}`,'system'));
+
+    socket.onAny((ev,payload)=>{
+      log(`Received "${ev}": ${JSON.stringify(payload)}`,'received');
+    });
+  };
+
+  $('disconnectBtn').onclick=()=>{
+    socket?.disconnect();
+    socket=null;
+  };
+
+  $('fireBtn').onclick=()=>{
+    const ev=$('eventName').value.trim();
+    let payload;
+    try { payload=JSON.parse($('payload').value); }
+    catch { return alert("Invalid JSON"); }
+
+    socket.emit(ev,payload);
+    log(`Sent "${ev}": ${JSON.stringify(payload)}`,'sent');
+  };
+
+  $('clearBtn').onclick=()=>logBox.innerHTML='';
+
+  function toggle(state){
+    $('fireBtn').disabled=!state;
+    $('disconnectBtn').disabled=!state;
+    $('connectBtn').disabled=state;
+  }
+</script>
+
+</body>
+</html>
