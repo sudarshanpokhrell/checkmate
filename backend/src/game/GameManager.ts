@@ -8,7 +8,7 @@ export class GameManager {
   createPlayer(
     socketId: string,
     role: role,
-    roomId?: string,
+    roomId: string,
     username?: string
   ) {
     const player: Player = {
@@ -19,11 +19,16 @@ export class GameManager {
     };
 
     this.players.push(player);
+
+    const game = new Game(roomId,player)
+
+    this.games.push(game)
+
     return player;
   }
 
   joinRoom(socketId: string, roomId: string, username?: string) {
-    const existingGame = this.games.find((room) => room.roomId === roomId);
+    const existingGame = this.games.find((game) => game.roomId === roomId);
 
     if (existingGame) {
       if (existingGame.player2) {
@@ -33,14 +38,14 @@ export class GameManager {
 
         existingGame.addPlayer(player);
 
-        return { game: existingGame, player };
+        return { message: "Game started!", to:[existingGame.player1.id, socketId]};
       }
     } else {
       const player = this.createPlayer(socketId, "white", roomId, username);
 
       const game = new Game(roomId, player);
 
-      return { game, player };
+      return {message:"Waiting for other player" };
     }
   }
 
