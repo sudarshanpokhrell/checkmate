@@ -1,70 +1,55 @@
 import { Game } from "./Game";
 import { Player, role } from "../types/ChessType";
+import { io } from "../index";
 
 export class GameManager {
   private games: Game[] = [];
   private players: Player[] = [];
 
-  createPlayer(
-    socketId: string,
-    role: role,
-    roomId: string,
-    username?: string
-  ) {
-    const player: Player = {
+  createPlayer(socketId: string, role: role, roomId: string, username?: string) {
+    return {
       id: socketId,
-      roomId: roomId ?? generateRoomId(),
-      username: username,
-      role: role,
+      roomId,
+      username,
+      role,
     };
-
-    this.players.push(player);
-
-    const game = new Game(roomId,player)
-
-    this.games.push(game)
-
-    return player;
   }
 
   joinRoom(socketId: string, roomId: string, username?: string) {
-    const existingGame = this.games.find((game) => game.roomId === roomId);
+    let game = this.games.find((g) => g.roomId === roomId);
 
-    if (existingGame) {
-      if (existingGame.player2) {
-        throw new Error("Room is full.");
-      } else {
-        const player = this.createPlayer(socketId, "black", roomId, username);
-
-        existingGame.addPlayer(player);
-
-        return { message: "Game started!", to:[existingGame.player1.id, socketId]};
-      }
-    } else {
+    if (!game) {
+      // Create game for first player
       const player = this.createPlayer(socketId, "white", roomId, username);
+      game = new Game(roomId, player);
+      this.games.push(game);
 
-      const game = new Game(roomId, player);
-
-      return {message:"Waiting for other player" };
+      io.to(socketId).emit("waiting", { roomId });
+      return;
     }
+
+    if (game.player2) throw new Error("Room is full.");
+
+    const player = this.createPlayer(socketId, "black", roomId, username);
+    game.addPlayer(player);
+
+    io.to(game.player1.id).emit("game_started", {you: game.player1, opponent: player} );
+    io.to(player.id).emit("game_started",{you: player ,opponent: game.player1} );
   }
 
-  playerDisconnect(socketId:string){
-    const player = this.players.find((player)=> player.id === socketId);
+  makeMove(socketId: string, move: { from: string; to: string }) {
+    const game = this.games.find(
+      (g) => g.player1.id === socketId || g.player2?.id === socketId
+    );
 
-    if(!player) return;
+    if (!game) return;
 
-    const game = this.games.find((game)=> game.player1.id === socketId || game.player2?.id === socketId)
-
-    if(game?.state.status === "in_progress"){
-        const winner = player.role === "white" ?"black":"white";
-        //TODO: endGame with winner.
-    }
+     game.makeMove(socketId, move);
+   
   }
-
 }
 
-function generateRoomId() {
+export function generateRoomId() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
   let id = "";
   for (let i = 0; i < 6; i++) {

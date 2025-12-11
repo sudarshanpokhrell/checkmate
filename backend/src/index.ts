@@ -5,7 +5,7 @@ import { GameManager } from "./game/GameManager";
 
 const app = express();
 const server = createServer(app);
-const io = new Server(server);
+export const io = new Server(server);
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
@@ -17,17 +17,13 @@ io.on("connection", (socket) => {
   console.log("Player Connected: ", socket.id);
 
   socket.on("join-room", ({ roomId, username }) => {
-    const {to, message } = gameManager.joinRoom(socket.id, roomId, username);
+    gameManager.joinRoom(socket.id, roomId, username);
+  });
 
-    to?.forEach(socketId => {
-        io.to(socketId).emit(message);
-    });
-
-
-
-});
-
-  socket.on("make-move", ({ from, to }) => {});
+  socket.on("make-move", ({ from, to }) => {
+    gameManager.makeMove(socket.id, { from, to });
+  });
+  
 });
 
 server.listen(3000, () => {
