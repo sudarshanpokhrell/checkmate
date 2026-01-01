@@ -1,6 +1,7 @@
 import { Copy } from 'lucide-react';
 import  { useEffect, useState } from 'react';
 import type { gameType } from '../pages/Home';
+import { useNavigate } from "react-router-dom";
 
 function generateRoomCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -22,6 +23,8 @@ export function RoomModal({ type, onClose }: { type: gameType; onClose: () => vo
   const copyCode = () => {
     navigator.clipboard.writeText(roomCode);
   };
+
+  const navigate = useNavigate()
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
@@ -58,7 +61,7 @@ export function RoomModal({ type, onClose }: { type: gameType; onClose: () => vo
                 <Copy/>
               </button>
             </div>
-            <button className="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 shadow-md active:scale-[0.99]">
+            <button className="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 shadow-md active:scale-[0.99]" onClick={()=> navigate("/game")}>
               Start Game
             </button>
           </div>
@@ -69,7 +72,7 @@ export function RoomModal({ type, onClose }: { type: gameType; onClose: () => vo
               placeholder="Enter Room Code (e.g., 'ABCD-1234')"
               className="w-full rounded-xl border border-slate-200 p-3 focus:ring-blue-500 focus:border-blue-500 transition"
             />
-            <button className="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white hover:bg-slate-800 shadow-md active:scale-[0.99]">
+            <button className="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white hover:bg-slate-800 shadow-md active:scale-[0.99]" onClick={()=> navigate("/game")}>
               Join Room
             </button>
           </div>

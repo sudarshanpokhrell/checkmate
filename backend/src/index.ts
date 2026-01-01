@@ -5,7 +5,13 @@ import { GameManager } from "./game/GameManager";
 
 const app = express();
 const server = createServer(app);
-export const io = new Server(server);
+export const io = new Server(server, {
+  cors:{
+    origin:"http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
@@ -18,6 +24,7 @@ io.on("connection", (socket) => {
 
   socket.on("join-room", ({ roomId, username }) => {
     gameManager.joinRoom(socket.id, roomId, username);
+    console.log("Joining room", roomId)
   });
 
   socket.on("make-move", ({ from, to }) => {

@@ -33,7 +33,9 @@ export class Game {
   }
 
   addPlayer(player: Player) {
-    if (this.player2) throw new Error("Room is Full.");
+    if (this.player2)  {
+      io.to(player.id).emit("error", {message: "Room is full."})
+    }
     this.player2 = player;
     this.state.status = "in_progress";
   }
@@ -42,34 +44,40 @@ export class Game {
     const fromPlayer =
       this.player1.id === playerId ? this.player1 : this.player2;
 
-    if (!fromPlayer) throw new Error("Player not in game");
-
-    if (fromPlayer.role !== this.state.turn)
-      throw new Error("Not your turn.");
-
-    try{
-        this.state.board.move(move)
-    }catch(error){
-        io.to(playerId).emit("Error", {message: "Invalid Move"})
+    if (!fromPlayer) {
+      io.to(playerId).emit("error", { message: "Invalid Move" });
+      return;
     }
 
-    if(this.state.board.isGameOver()){
-        io.to(this.player1.id).emit("Game Over", {winner: this.state.board.turn() === "w" ? "Black": "White"})
-        io.to(this.player1.id).emit("Game Over", {winner: this.state.board.turn() === "w" ? "Black": "White"})
-        return
+    if (fromPlayer.role !== this.state.turn) {
+      io.to(playerId).emit("error", {message: "Not your move."})
     }
 
-    if(this.state.turn === "white" && this.player2){
-        io.to(this.player2.id).emit("Move made", move)
+    try {
+      this.state.board.move(move);
+    } catch (error) {
+      io.to(playerId).emit("error", { message: "Invalid Move" });
     }
 
-    if(this.state.turn === "black"){
-        io.to(this.player1.id).emit("Move made", move)
+    if (this.state.board.isGameOver()) {
+      io.to(this.player1.id).emit("game_over", {
+        winner: this.state.board.turn() === "w" ? "Black" : "White",
+      });
+      io.to(this.player1.id).emit("game_over", {
+        winner: this.state.board.turn() === "w" ? "Black" : "White",
+      });
+      return;
     }
 
-    this.state.turn = this.state.turn === "black" ? "white": "black"
+    if (this.state.turn === "white" && this.player2) {
+      io.to(this.player2.id).emit("move_made", move);
+    }
+
+    if (this.state.turn === "black") {
+      io.to(this.player1.id).emit("move_made", move);
+    }
+
+    this.state.turn = this.state.turn === "black" ? "white" : "black";
     return;
   }
-
-
 }

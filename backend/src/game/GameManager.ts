@@ -28,7 +28,9 @@ export class GameManager {
       return;
     }
 
-    if (game.player2) throw new Error("Room is full.");
+    if (game.player2){
+      io.to(socketId).emit("error", {message:"Room is full."})
+    };
 
     const player = this.createPlayer(socketId, "black", roomId, username);
     game.addPlayer(player);
